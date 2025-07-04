@@ -1,4 +1,3 @@
-
 trigger:
   branches:
     include:
@@ -7,7 +6,7 @@ trigger:
 variables:
   resource_group: "demo-rg"
   vm_name: "demo-vm"
-  location: "East US"
+  location: "westeurope"  # Azure-supported EU region closest to "eu-est-1"
 
 stages:
   - stage: Terraform
@@ -18,21 +17,39 @@ stages:
         steps:
           - checkout: self
 
-          - task: UseTerraform@0
+          - task: Bash@3
+            displayName: "Install Terraform"
             inputs:
-              command: 'init'
-              workingDirectory: 'terraform'
+              targetType: 'inline'
+              script: |
+                curl -sLo terraform.zip https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip
+                unzip terraform.zip
+                sudo mv terraform /usr/local/bin/
+                terraform -version
 
-          - task: UseTerraform@0
+          - task: Bash@3
+            displayName: "Terraform Init"
             inputs:
-              command: 'plan'
-              workingDirectory: 'terraform'
+              targetType: 'inline'
+              script: |
+                cd terraform
+                terraform init
 
-          - task: UseTerraform@0
+          - task: Bash@3
+            displayName: "Terraform Plan"
             inputs:
-              command: 'apply'
-              workingDirectory: 'terraform'
-              args: '-auto-approve'
+              targetType: 'inline'
+              script: |
+                cd terraform
+                terraform plan -var="location=$(location)" -var="resource_group_name=$(resource_group)" -var="vm_name=$(vm_name)"
+
+          - task: Bash@3
+            displayName: "Terraform Apply"
+            inputs:
+              targetType: 'inline'
+              script: |
+                cd terraform
+                terraform apply -var="location=$(location)" -var="resource_group_name=$(resource_group)" -var="vm_name=$(vm_name)" -auto-approve
 
   - stage: Ansible
     dependsOn: Terraform
@@ -44,6 +61,7 @@ stages:
           - checkout: self
 
           - task: Bash@3
+            displayName: "Run Ansible Playbook"
             inputs:
               targetType: 'inline'
               script: |
