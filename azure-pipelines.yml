@@ -81,11 +81,11 @@ stages:
              - task: Bash@3
                displayName: "Capture Public IP Output"
                inputs:
-                 targetType: 'inline'
-                 script: |
-                    cd terraform
-                    PUBLIC_IP=$(terraform output -raw public_ip)
-                    echo "##vso[task.setvariable variable=VM_PUBLIC_IP]$PUBLIC_IP"
+                targetType: 'inline'
+                script: |
+                   cd terraform
+                   PUBLIC_IP=$(terraform output -raw public_ip)
+                   echo "##vso[task.setvariable variable=VM_PUBLIC_IP]$PUBLIC_IP"
     
   - stage: Ansible
     dependsOn: Terraform
