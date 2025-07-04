@@ -6,7 +6,8 @@ trigger:
 variables:
   resource_group: "demo-rg"
   vm_name: "demo-vm"
-  location: "westeurope"  # Azure-supported EU region closest to "eu-est-1"
+  location: "westeurope"  # Use Azure-supported region
+  admin_user: "azureuser"
 
 stages:
   - stage: Terraform
@@ -29,6 +30,11 @@ stages:
 
           - task: Bash@3
             displayName: "Terraform Init"
+            env:
+              ARM_CLIENT_ID: $(ARM_CLIENT_ID)
+              ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
+              ARM_TENANT_ID: $(ARM_TENANT_ID)
+              ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
             inputs:
               targetType: 'inline'
               script: |
@@ -37,19 +43,40 @@ stages:
 
           - task: Bash@3
             displayName: "Terraform Plan"
+            env:
+              ARM_CLIENT_ID: $(ARM_CLIENT_ID)
+              ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
+              ARM_TENANT_ID: $(ARM_TENANT_ID)
+              ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
             inputs:
               targetType: 'inline'
               script: |
                 cd terraform
-                terraform plan -var="location=$(location)" -var="resource_group_name=$(resource_group)" -var="vm_name=$(vm_name)"
+                terraform plan \
+                  -var="location=$(location)" \
+                  -var="resource_group_name=$(resource_group)" \
+                  -var="vm_name=$(vm_name)" \
+                  -var="admin_username=$(admin_user)" \
+                  -var="admin_password=$(ADMIN_PASSWORD)"
 
           - task: Bash@3
             displayName: "Terraform Apply"
+            env:
+              ARM_CLIENT_ID: $(ARM_CLIENT_ID)
+              ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
+              ARM_TENANT_ID: $(ARM_TENANT_ID)
+              ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
             inputs:
               targetType: 'inline'
               script: |
                 cd terraform
-                terraform apply -var="location=$(location)" -var="resource_group_name=$(resource_group)" -var="vm_name=$(vm_name)" -auto-approve
+                terraform apply \
+                  -var="location=$(location)" \
+                  -var="resource_group_name=$(resource_group)" \
+                  -var="vm_name=$(vm_name)" \
+                  -var="admin_username=$(admin_user)" \
+                  -var="admin_password=$(ADMIN_PASSWORD)" \
+                  -auto-approve
 
   - stage: Ansible
     dependsOn: Terraform
@@ -57,14 +84,21 @@ stages:
       - job: RunAnsible
         pool:
           vmImage: ubuntu-latest
+        variables:
+          VM_PUBLIC_IP: $(VM_PUBLIC_IP)  # Pass via pipeline variable or Terraform output
         steps:
           - checkout: self
 
           - task: Bash@3
             displayName: "Run Ansible Playbook"
+            env:
+              ANSIBLE_PASSWORD: $(ADMIN_PASSWORD)
             inputs:
               targetType: 'inline'
               script: |
                 sudo apt-get update
                 sudo apt-get install -y ansible
-                ansible-playbook -i '<VM_PUBLIC_IP>,' ansible/playbook.yml --user azureuser --extra-vars "ansible_password='P@ssword1234!'" --ssh-extra-args='-o StrictHostKeyChecking=no'
+                ansible-playbook -i "$(VM_PUBLIC_IP)," ansible/playbook.yml \
+                  --user $(admin_user) \
+                  --extra-vars "ansible_password=${ANSIBLE_PASSWORD}" \
+                  --ssh-extra-args='-o StrictHostKeyChecking=no'
