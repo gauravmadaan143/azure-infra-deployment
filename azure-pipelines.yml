@@ -10,10 +10,12 @@ variables:
 
 stages:
   - stage: Terraform
+    displayName: "Terraform Deployment"
     jobs:
       - job: TerraformInitPlanApply
+        displayName: "Run Terraform"
         pool:
-          name: Default
+          name: Default  # Use your authorized or self-hosted agent pool name here
         steps:
           - checkout: self
 
@@ -50,21 +52,3 @@ stages:
               script: |
                 cd terraform
                 terraform apply -var="location=$(location)" -var="resource_group_name=$(resource_group)" -var="vm_name=$(vm_name)" -auto-approve
-
-  - stage: Ansible
-    dependsOn: Terraform
-    jobs:
-      - job: RunAnsible
-        pool:
-          name: SelfHostedPool   # ✅ Same pool for Ansible stage
-        steps:
-          - checkout: self
-
-          - task: Bash@3
-            displayName: "Run Ansible Playbook"
-            inputs:
-              targetType: 'inline'
-              script: |
-                sudo apt-get update
-                sudo apt-get install -y ansible
-                ansible-playbook -i '<VM_PUBLIC_IP>,' ansible/playbook.yml --user azureuser --extra-vars "ansible_password='$(ANSIBLE_PASSWORD)'" --ssh-extra-args='-o StrictHostKeyChecking=no'
