@@ -13,7 +13,7 @@ stages:
     jobs:
       - job: TerraformInitPlanApply
         pool:
-          name: selfhosted   # ✅ Use your custom pool name here
+          name: SelfHostedPool
         steps:
           - checkout: self
 
