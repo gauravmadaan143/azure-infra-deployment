@@ -47,4 +47,9 @@ stages:
                 terraform plan -var="location=$(location)" -var="resource_group_name=$(resource_group)" -var="vm_name=$(vm_name)"
 
           - task: Bash@3
-            displayName: "Terraform App
+            displayName: "Terraform Apply"
+            inputs:
+              targetType: 'inline'
+              script: |
+                cd terraform
+                terraform apply -var="location=$(location)" -var="resource_group_name=$(resource_group)" -var="vm_name=$(vm_name)" -auto-approve
