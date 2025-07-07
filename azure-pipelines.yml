@@ -2,8 +2,9 @@ trigger:
   branches:
     include:
       - main
+
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'ubuntu-latest'  # Use Microsoft-hosted agent
 
 variables:
   resource_group: "demo-rg"
@@ -16,8 +17,6 @@ stages:
     jobs:
       - job: TerraformInitPlanApply
         displayName: "Run Terraform"
-        pool:
-          name: Default  # Use your authorized or self-hosted agent pool name here
         steps:
           - checkout: self
 
@@ -48,9 +47,4 @@ stages:
                 terraform plan -var="location=$(location)" -var="resource_group_name=$(resource_group)" -var="vm_name=$(vm_name)"
 
           - task: Bash@3
-            displayName: "Terraform Apply"
-            inputs:
-              targetType: 'inline'
-              script: |
-                cd terraform
-                terraform apply -var="location=$(location)" -var="resource_group_name=$(resource_group)" -var="vm_name=$(vm_name)" -auto-approve
+            displayName: "Terraform App
