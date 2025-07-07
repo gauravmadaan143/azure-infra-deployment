@@ -3,6 +3,9 @@ trigger:
     include:
       - main
 
+pool:
+  vmImage: 'ubuntu-latest'
+
 variables:
   resource_group: "demo-rg"
   vm_name: "demo-vm"
