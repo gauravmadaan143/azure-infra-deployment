@@ -20,11 +20,26 @@ stages:
         steps:
           - checkout: self
 
-          - task: TerraformInstaller@1
-            displayName: "Install Terraform"
+          - task: Bash@3
+            displayName: "Install Terraform Manually"
             inputs:
-              terraformVersion: '1.6.6'
-
+              targetType: 'inline'
+              script: |
+                echo "Cleaning old terraform binary or directory..."
+                rm -rf terraform terraform.zip
+          
+                echo "Downloading Terraform..."
+                curl -sLo terraform.zip https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip
+          
+                echo "Unzipping..."
+                unzip terraform.zip || { echo "Unzip failed"; exit 1; }
+          
+                echo "Installing..."
+                sudo mv terraform /usr/local/bin/
+          
+                echo "Terraform Version:"
+                terraform -version
+          
           - task: Bash@3
             displayName: "Terraform Init"
             inputs:
